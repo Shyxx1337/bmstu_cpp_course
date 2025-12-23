@@ -1,7 +1,6 @@
 #pragma once
 
 #include <exception>
-#include <iostream>
 #include <utility>
 
 namespace bmstu
@@ -10,7 +9,7 @@ template <typename T>
 class stack
 {
    public:
-	stack() : data_(nullptr), size_(0), capacity_(0) {}
+	stack() : data_(nullptr), size_(0) {}
 
 	bool empty() const noexcept { return size_ == 0; }
 
@@ -24,17 +23,18 @@ class stack
 	template <typename... Args>
 	void emplace(Args&&... args)
 	{
-		if (size_ == capacity_)
-			grow();
-		
-		new(data_ + size_) T(std::forward<Args>(args)...);
+		T* new_data = relocate();
+		new(new_data + size_) T(std::forward<Args>(args)...);
+		operator delete[](data_);
+		data_ = new_data;
 		++size_;
 	}
 
 	void push(T&& value) {
-		if (size_ == capacity_)
-			grow();
-		new(data_ + size_) T(std::move(value));
+		T* new_data = relocate();
+		new(new_data + size_) T(std::move(value));
+		operator delete[](data_);
+		data_ = new_data;
 		++size_;
 	}
 
@@ -45,10 +45,10 @@ class stack
 	}
 
 	void push(const T& value) {
-		if (size_ == capacity_)
-			grow();
-
-		new(data_ + size_) T(value);
+		T* new_data = relocate();
+		new(new_data + size_) T(value);
+		operator delete[](data_);
+		data_ = new_data;
 		++size_;
 	}
 
@@ -77,19 +77,15 @@ class stack
    private:
 	T* data_;
 	size_t size_;
-    size_t capacity_;
 
 	private:
-    void grow() {
-        size_t new_cap = (capacity_ == 0 ? 1 : capacity_ + 1);
-        T* new_data = static_cast<T*>(::operator new[](new_cap * sizeof(T)));
+    T* relocate() {
+        T* new_data = static_cast<T*>(::operator new[]((size_ + 1) * sizeof(T)));
         for (size_t i = 0; i < size_; ++i) {
             new (new_data + i) T(std::move(data_[i]));
             data_[i].~T();
         }
-		::operator delete[](data_);
-        data_ = new_data;
-        capacity_ = new_cap;
+		return new_data;
     }
 };
 }  // namespace bmstu
