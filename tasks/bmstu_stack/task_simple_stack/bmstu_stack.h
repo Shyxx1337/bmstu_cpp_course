@@ -1,7 +1,6 @@
 #pragma once
 
 #include <exception>
-#include <iostream>
 #include <utility>
 
 namespace bmstu
