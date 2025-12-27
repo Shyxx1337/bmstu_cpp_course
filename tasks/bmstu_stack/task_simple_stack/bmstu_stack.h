@@ -90,3 +90,4 @@ class stack
     }
 };
 }  // namespace bmstu
+// 1337
